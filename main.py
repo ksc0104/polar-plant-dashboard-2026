@@ -7,19 +7,200 @@ from plotly.subplots import make_subplots
 from scipy import stats
 import io
 
-st.set_page_config(page_title="극지식물 생육 분석 대시보드", layout="wide")
+# ─────────────────────────────────────────────
+# 페이지 설정
+# ─────────────────────────────────────────────
+st.set_page_config(
+    page_title="극지식물 생육 분석 대시보드",
+    page_icon="🌿",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 
+# ─────────────────────────────────────────────
+# 테마 CSS
+# ─────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR&display=swap');
-html, body, [class*="css"] {
-   font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif;
-}
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
+
+  * { box-sizing: border-box; }
+
+  html, body, [class*="css"], .stApp {
+    font-family: 'Inter', 'Noto Sans KR', sans-serif !important;
+    background: #f0f4f8 !important;
+    color: #1a2a3a !important;
+  }
+
+  .main .block-container {
+    background: linear-gradient(160deg, #f0f4f8 0%, #e8eef5 50%, #f5f0f0 100%) !important;
+    border-radius: 0 !important;
+  }
+
+  [data-testid="stHeader"] { display: none; }
+
+  .dashboard-title {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: 2rem;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #0d2137 0%, #1a5276 50%, #2d7ab8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.25em;
+  }
+
+  .dashboard-subtitle {
+    font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 400;
+    font-size: 0.95rem;
+    color: #5a6f82;
+    margin-bottom: 1.5rem;
+    border-left: 3px solid #2d7ab8;
+    padding-left: 12px;
+  }
+
+  section[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #0d1f2d 0%, #142a3d 100%) !important;
+    border-right: 1px solid rgba(255,255,255,0.06) !important;
+  }
+
+  .sidebar-title-custom {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    color: #7fb3d8;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 0;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid rgba(127,179,216,0.15);
+  }
+
+  .stat-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.5);
+    border-radius: 14px;
+    padding: 1.1rem 1.3rem;
+    box-shadow: 0 4px 16px rgba(13,33,55,0.07), 0 1px 3px rgba(13,33,55,0.04);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    height: 100%;
+  }
+  .stat-card:hover {
+    box-shadow: 0 8px 28px rgba(13,33,55,0.11), 0 2px 6px rgba(13,33,55,0.06);
+    transform: translateY(-2px);
+  }
+  .stat-card-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #6b8aa0;
+    margin-bottom: 0.35rem;
+  }
+  .stat-card-value {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #0d2137;
+    line-height: 1.1;
+  }
+  .stat-card-value.accent-blue  { color: #1a5276; }
+  .stat-card-value.accent-coral { color: #c0392b; }
+  .stat-card-value.accent-lime  { color: #1d6f42; }
+  .stat-card-value.accent-gold  { color: #8b6914; }
+
+  .section-card {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.6);
+    border-radius: 14px;
+    padding: 1.3rem 1.4rem;
+    box-shadow: 0 4px 14px rgba(13,33,55,0.05);
+  }
+  .section-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #4a6a82;
+    margin-bottom: 0.8rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid rgba(45,122,184,0.2);
+  }
+
+  .hypothesis-card {
+    background: linear-gradient(135deg, rgba(26,82,118,0.04) 0%, rgba(45,122,184,0.06) 100%);
+    border-left: 3px solid #2d7ab8;
+    border-radius: 0 10px 10px 0;
+    padding: 0.7rem 1rem;
+    margin-bottom: 0.5rem;
+  }
+  .hypothesis-num {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #2d7ab8;
+    background: rgba(45,122,184,0.12);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  [data-testid="stTabs"] button {
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+    letter-spacing: 0.04em !important;
+    padding: 0.65rem 1.2rem !important;
+    border-radius: 8px 8px 0 0 !important;
+    color: #5a7a94 !important;
+    background: transparent !important;
+  }
+  [data-testid="stTabs"] button[aria-selected="true"] {
+    background: rgba(255,255,255,0.9) !important;
+    color: #1a5276 !important;
+    box-shadow: 0 2px 8px rgba(13,33,55,0.08) !important;
+    border-bottom: 2px solid #2d7ab8 !important;
+  }
+  [data-testid="stTabs"] button:hover:not([aria-selected="true"]) {
+    background: rgba(255,255,255,0.5) !important;
+    color: #1a5276 !important;
+  }
+
+  .info-card {
+    background: rgba(255,255,255,0.7);
+    border: 1px dashed rgba(45,122,184,0.3);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    color: #5a7a94;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.88rem;
+  }
+
+  .history-banner {
+    background: linear-gradient(90deg, rgba(26,82,118,0.08) 0%, rgba(45,122,184,0.12) 50%, rgba(26,82,118,0.08) 100%);
+    border-radius: 10px;
+    padding: 0.7rem 1.2rem;
+    border: 1px solid rgba(45,122,184,0.15);
+  }
+
+  .stDataFrame { font-family: 'Inter', sans-serif !important; }
+  .stDataFrame table { font-size: 0.82rem !important; }
 </style>
 """, unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
-# 데이터 로딩 (캐싱)
+# 데이터 로딩
 # ─────────────────────────────────────────────
 @st.cache_data
 def load_and_standardize(env_file, growth_file):
@@ -90,38 +271,6 @@ def std_cols(df):
         df["time"] = parsed
     return df
 
-def make_scatter_with_trend(df, x_col, y_col, title, color_col=None):
-    d = df[[x_col, y_col]].dropna()
-    if len(d) < 2:
-        return None
-    fig = px.scatter(d, x=x_col, y=y_col, title=title,
-                     labels={x_col: x_col, y_col: y_col},
-                     color=color_col if color_col and color_col in df.columns else None,
-                     hover_data=[color_col] if color_col and color_col in df.columns else None)
-    x_vals = d[x_col].values
-    y_vals = d[y_col].values
-    slope, intercept = np.polyfit(x_vals, y_vals, 1)
-    line_x = np.array([x_vals.min(), x_vals.max()])
-    line_y = slope * line_x + intercept
-    r, _ = stats.pearsonr(x_vals, y_vals)
-    fig.add_trace(go.Scatter(x=line_x, y=line_y, mode="lines",
-                             line=dict(color="red", dash="dash", width=2),
-                             name=f"추세선 (r={r:.3f})"))
-    fig.update_layout(font=dict(family="Malgun Gothic, Apple SD Gothic Neo, sans-serif"),
-                      width=900, height=500)
-    return fig
-
-def make_heatmap(df, cols):
-    d = df[cols].dropna()
-    if len(d) < 2 or len(cols) < 2:
-        return None
-    corr = d[cols].corr()
-    fig = px.imshow(corr, text_auto=".3f", color_continuous_scale="RdBu_r",
-                   title="변수 간 상관계수 행렬")
-    fig.update_layout(font=dict(family="Malgun Gothic, Apple SD Gothic Neo, sans-serif"),
-                      width=600, height=500)
-    return fig
-
 def get_school_name(file):
     if file is None:
         return "우리 학교"
@@ -132,248 +281,30 @@ def get_school_name(file):
     return name.replace(".csv", "")
 
 # ─────────────────────────────────────────────
-# 사이드바
+# 색상
 # ─────────────────────────────────────────────
-st.sidebar.title("📊 데이터 업로드")
-env_file = st.sidebar.file_uploader("환경 CSV", type="csv")
-growth_file = st.sidebar.file_uploader("생육 결과 CSV", type="csv")
+PALETTE = {
+    "deep":   "#0d2137",
+    "ocean":  "#1a5276",
+    "sky":    "#2d7ab8",
+    "ice":    "#5dade2",
+    "coral":  "#c0392b",
+    "lime":   "#1d6f42",
+    "gold":   "#8b6914",
+}
 
-if env_file is None and growth_file is None:
-    st.info("CSV 파일 2개를 사이드바에 업로드해 주세요.")
-    st.stop()
+PLOTLY_COLORS = ["#1a5276", "#2d7ab8", "#5dade2", "#c0392b", "#1d6f42", "#8b6914", "#e67e22", "#8e44ad"]
 
-env_df, growth_df = load_and_standardize(env_file, growth_file)
-school_name = get_school_name(env_file or growth_file)
-
-st.title(f"{school_name} 극지식물 개체별 생육 차이 분석")
-
-# 생육 측정 항목 선택
-if not growth_df.empty:
-    measure_cols = [c for c in ["잎 수", "지상부 길이", "지하부 길이", "생중량", "지상부 질량", "지하부 질량"]
-                    if c in growth_df.columns]
-    if measure_cols:
-        selected_measure = st.sidebar.selectbox("생육 측정 항목 선택", measure_cols)
-
-# ─────────────────────────────────────────────
-# 탭
-# ─────────────────────────────────────────────
-tab1, tab2, tab3 = st.tabs(["📋 개요", "📈 산점도 & 상관분석", "🎯 결론"])
-
-with tab1:
-    try:
-        c1, c2 = st.columns(2)
-        with c1:
-            st.header("📊 데이터 정보")
-            if not env_df.empty:
-                st.info(f"학교명: {school_name} (환경 데이터)")
-                st.metric("총 측정 횟수", len(env_df))
-                numeric_env = [c for c in ["temperature", "humidity", "ph", "ec"] if c in env_df.columns]
-                if numeric_env:
-                    st.subheader("환경 데이터 요약")
-                    for col in numeric_env:
-                        vals = env_df[col].dropna()
-                        if len(vals) >= 1:
-                            label_map = {"temperature": "평균 온도(℃)", "humidity": "평균 습도(%)",
-                                         "ph": "평균 pH", "ec": "평균 EC"}
-                            st.metric(label_map.get(col, col), f"{vals.mean():.2f} ± {vals.std():.2f}")
-                if "time" in env_df.columns:
-                    times = env_df["time"].dropna()
-                    if len(times) >= 2:
-                        st.write(f"측정 기간: {times.min().strftime('%Y-%m-%d')} ~ {times.max().strftime('%Y-%m-%d')}")
-            else:
-                st.info("환경 데이터가 업로드되지 않았습니다.")
-
-        with c2:
-            st.header("🌱 생육 데이터")
-            if not growth_df.empty:
-                st.info(f"학교명: {school_name} (생육 결과 데이터)")
-                st.metric("개체 수", len(growth_df))
-                if "생중량" in growth_df.columns:
-                    bw = growth_df["생중량"].dropna()
-                    if len(bw) >= 1:
-                        st.metric("평균 생중량(g)", f"{bw.mean():.2f} ± {bw.std():.2f}")
-                if "잎 수" in growth_df.columns:
-                    leaves = growth_df["잎 수"].dropna()
-                    if len(leaves) >= 1:
-                        st.metric("평균 잎 수(장)", f"{leaves.mean():.1f}")
-            else:
-                st.info("생육 데이터가 업로드되지 않았습니다.")
-
-        st.header("우리의 가설")
-        st.markdown("""
-        1. **지상부 길이와 지하부 길이는 양의 상관관계가 있다.**
-        2. **잎의 개수와 생중량의 관계가 식물의 생장을 가장 잘 나타낸다.**
-        3. **지상부 길이와 생중량, 지하부 길이와 생중량은 약한 상관관계가 있다.**
-        """)
-    except Exception as e:
-        st.warning(f"⚠️ 이 부분은 데이터 형식 때문에 표시하지 못했어요: {e}")
-
-with tab2:
-    try:
-        if growth_df.empty:
-            st.info("생육 데이터가 업로드되지 않았습니다.")
-        else:
-            st.header("📈 환경 데이터 & 생육 산점도")
-
-            env_col1, env_col2 = st.columns(2)
-            with env_col1:
-                if "time" in env_df.columns and "temperature" in env_df.columns:
-                    d = env_df[["time", "temperature"]].dropna()
-                    if len(d) >= 2:
-                        fig = px.line(d, x="time", y="temperature", title="시간별 온도 변화")
-                        fig.update_layout(font=dict(family="Malgun Gothic, Apple SD Gothic Neo, sans-serif"))
-                        st.plotly_chart(fig, width="stretch")
-                    else:
-                        st.info("온도 데이터가 충분하지 않습니다.")
-                else:
-                    st.info("온도 데이터가 없습니다.")
-
-            with env_col2:
-                if "time" in env_df.columns and "humidity" in env_df.columns:
-                    d = env_df[["time", "humidity"]].dropna()
-                    if len(d) >= 2:
-                        fig = px.line(d, x="time", y="humidity", title="시간별 습도 변화")
-                        fig.update_layout(font=dict(family="Malgun Gothic, Apple SD Gothic Neo, sans-serif"))
-                        st.plotly_chart(fig, width="stretch")
-                    else:
-                        st.info("습도 데이터가 충분하지 않습니다.")
-                else:
-                    st.info("습도 데이터가 없습니다.")
-
-            st.header("📊 생육 지표 간 산점도")
-
-            if "생중량" in growth_df.columns and "잎 수" in growth_df.columns:
-                fig = make_scatter_with_trend(growth_df, "잎 수", "생중량",
-                                              "잎 수 vs 생중량 (생장 대표 지표)")
-                if fig:
-                    st.plotly_chart(fig, width="stretch")
-                else:
-                    st.info("데이터가 부족합니다.")
-
-            if "생중량" in growth_df.columns and "지상부 길이" in growth_df.columns:
-                fig = make_scatter_with_trend(growth_df, "지상부 길이", "생중량",
-                                              "지상부 길이 vs 생중량")
-                if fig:
-                    st.plotly_chart(fig, width="stretch")
-                else:
-                    st.info("데이터가 부족합니다.")
-
-            if "생중량" in growth_df.columns and "지하부 길이" in growth_df.columns:
-                fig = make_scatter_with_trend(growth_df, "지하부 길이", "생중량",
-                                              "지하부 길이 vs 생중량")
-                if fig:
-                    st.plotly_chart(fig, width="stretch")
-                else:
-                    st.info("데이터가 부족합니다.")
-
-            if "지상부 길이" in growth_df.columns and "지하부 길이" in growth_df.columns:
-                fig = make_scatter_with_trend(growth_df, "지상부 길이", "지하부 길이",
-                                              "지상부 길이 vs 지하부 길이")
-                if fig:
-                    st.plotly_chart(fig, width="stretch")
-                else:
-                    st.info("데이터가 부족합니다.")
-
-            st.header("🔢 상관계수 행렬")
-            corr_cols = [c for c in ["잎 수", "지상부 길이", "지상부 질량", "지하부 길이",
-                                      "지하부 질량", "생중량"] if c in growth_df.columns]
-            if len(corr_cols) >= 2:
-                fig = make_heatmap(growth_df, corr_cols)
-                if fig:
-                    st.plotly_chart(fig, width="stretch")
-                else:
-                    st.info("상관계수 계산 데이터가 부족합니다.")
-            else:
-                st.info("상관계수 행렬을 만들 변수가 충분하지 않습니다.")
-
-        # CSV 다운로드 버튼
-        if env_file is not None or growth_file is not None:
-            st.divider()
-            st.header("⬇️ 데이터 다운로드")
-            if not env_df.empty:
-                csv_data = env_df.to_csv(index=False).encode("utf-8-sig")
-                st.download_button("환경 데이터 CSV 다운로드", csv_data,
-                                   file_name=f"{school_name}_환경데이터.csv",
-                                   mime="text/csv")
-            if not growth_df.empty:
-                csv_data = growth_df.to_csv(index=False).encode("utf-8-sig")
-                st.download_button("생육 결과 CSV 다운로드", csv_data,
-                                   file_name=f"{school_name}_생육결과데이터.csv",
-                                   mime="text/csv")
-    except Exception as e:
-        st.warning(f"⚠️ 이 부분은 데이터 형식 때문에 표시하지 못했어요: {e}")
-
-with tab3:
-    try:
-        if growth_df.empty:
-            st.info("생육 데이터가 업로드되지 않았습니다.")
-        else:
-            st.header("🎯 분석 결론")
-
-            conclusions = []
-            top_individuals = []
-
-            # 생중량 vs 잎 수 상관관계 (가장 강한 관계)
-            if "생중량" in growth_df.columns and "잎 수" in growth_df.columns:
-                d = growth_df[["잎 수", "생중량"]].dropna()
-                if len(d) >= 3:
-                    r, p = stats.pearsonr(d["잎 수"], d["생중량"])
-                    conclusions.append(
-                        f"✅ **잎 수 ↔ 생중량: 상관계수 r = {r:.3f}** "
-                        f"(p = {p:.4f}) — 식물의 생장을 가장 잘 나타내는 관계입니다."
-                    )
-
-            # 지상부 길이 ↔ 생중량
-            if "생중량" in growth_df.columns and "지상부 길이" in growth_df.columns:
-                d = growth_df[["지상부 길이", "생중량"]].dropna()
-                if len(d) >= 3:
-                    r, p = stats.pearsonr(d["지상부 길이"], d["생중량"])
-                    conclusions.append(
-                        f"📏 **지상부 길이 ↔ 생중량: r = {r:.3f}** "
-                        f"(p = {p:.4f}) — 약한 양의 상관관계입니다."
-                    )
-
-            # 지하부 길이 ↔ 생중량
-            if "생중량" in growth_df.columns and "지하부 길이" in growth_df.columns:
-                d = growth_df[["지하부 길이", "생중량"]].dropna()
-                if len(d) >= 3:
-                    r, p = stats.pearsonr(d["지하부 길이"], d["생중량"])
-                    conclusions.append(
-                        f"🌱 **지하부 길이 ↔ 생중량: r = {r:.3f}** "
-                        f"(p = {p:.4f}) — 약한 양의 상관관계입니다."
-                    )
-
-            # 지상부 길이 ↔ 지하부 길이
-            if "지상부 길이" in growth_df.columns and "지하부 길이" in growth_df.columns:
-                d = growth_df[["지상부 길이", "지하부 길이"]].dropna()
-                if len(d) >= 3:
-                    r, p = stats.pearsonr(d["지상부 길이"], d["지하부 길이"])
-                    conclusions.append(
-                        f"🔗 **지상부 길이 ↔ 지하부 길이: r = {r:.3f}** "
-                        f"(p = {p:.4f}) — 양의 상관관계입니다."
-                    )
-
-            for c in conclusions:
-                st.markdown(c)
-
-            st.divider()
-
-            # 개체별 생중량 상위/하위
-            if "생중량" in growth_df.columns and "개체번호" in growth_df.columns:
-                d = growth_df[["개체번호", "생중량"]].dropna().sort_values("생중량", ascending=False)
-                if len(d) >= 1:
-                    st.subheader("🏆 개체별 생중량")
-                    top_n = min(5, len(d))
-                    top_df = d.head(top_n)
-                    st.info("▲ 생중량 상위 개체")
-                    st.dataframe(top_df, width="stretch", hide_index=True)
-
-                    bottom_df = d.tail(top_n).sort_values("생중량", ascending=True)
-                    st.info("▼ 생중량 하위 개체")
-                    st.dataframe(bottom_df, width="stretch", hide_index=True)
-
-            if conclusions:
-                st.divider()
-                st.success("💡 **핵심 결론:** 생중량과 잎의 개수 사이에 가장 강한 상관관계가 있습니다!")
-    except Exception as e:
-        st.warning(f"⚠️ 이 부분은 데이터 형식 때문에 표시하지 못했어요: {e}")
+def plotly_theme(fig, width=900, height=480, show_title=True):
+    fig.update_layout(
+        font=dict(family="Inter, 'Noto Sans KR', sans-serif", color="#1a2a3a"),
+        plot_bgcolor="rgba(255,255,255,0.95)",
+        paper_bgcolor="rgba(255,255,255,0.95)",
+        margin=dict(l=60, r=30, t=50, b=50),
+        width=width, height=height,
+        hoverlabel=dict(bgcolor="#0d2137", font_color="white",
+                        font_family="Inter, 'Noto Sans KR', sans-serif",
+                        font_size=12),
+        xaxis=dict(
+            gridcolor="rgba(45,122,184,0.08)",
+            zerolinecolor="rgba
